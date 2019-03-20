@@ -1,0 +1,73 @@
+version: "2.3"
+
+services:
+  # 定义全局的数据盘
+  db_storage:
+    image: debian:wheezy
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./mongo:/data/db
+      #- ./redis:/data
+
+  local_mysql:
+    image: mysql:5.7.21
+    environment:
+      - MYSQL_DATABASE=cta
+      - MYSQL_USER=shukun
+      - MYSQL_PASSWORD=123456
+      - MYSQL_ROOT_PASSWORD=123456
+      - TZ=Asia/Shanghai
+    ports:
+      - "7000:3306"
+    networks:
+      - local
+    volumes_from:
+      - db_storage
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-allowed-packet=33554432
+    restart: always
+
+  local_mongo:
+    image: mongo:3.4.13
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=123456
+      - TZ=Asia/Shanghai
+    ports:
+      - "7001:27017"
+    networks:
+      - local
+    volumes_from:
+      - db_storage
+    restart: always
+
+  local_redis:
+    image: redis:3.2
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "7002:6379"
+    networks:
+      - local
+    volumes_from:
+      - db_storage
+    command: --requirepass 123456 # --appendonly yes
+    restart: always
+
+networks:
+  local:
+    driver: bridge
+
+# mongo新建数据库，添加普通用户
+# docker exec -it xxxx bash
+# mongo
+# use admin;
+
+# db.auth('root','123456');
+
+# use cta;
+
+# db.createUser({
+#   user: 'shukun',
+#   pwd: '123456',
+#   roles: [{role: 'readWrite',db: 'cta'}]
+# });
